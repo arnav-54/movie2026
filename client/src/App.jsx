@@ -14,7 +14,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Add more routes here */}
+          <Route path="/movie/:id" element={<MovieDetails />} />
+          <Route path="/booking/:showId" element={<SeatSelection />} />
         </Routes>
       </AuthProvider>
     </Router>
