@@ -18,6 +18,18 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+const authRoutes = require('./routes/auth.routes');
+const movieRoutes = require('./routes/movie.routes');
+const showRoutes = require('./routes/show.routes');
+const bookingRoutes = require('./routes/booking.routes');
+const infraRoutes = require('./routes/infra.routes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/movies', movieRoutes);
+app.use('/api/shows', showRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/infra', infraRoutes);
+
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
