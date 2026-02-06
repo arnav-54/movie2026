@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String    @unique
+  password  String
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Movie {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tmdbId      Int      @unique
+  title       String
+  description String
+  poster      String?
+  backdrop    String?
+  duration    Int      @default(120)
+  rating      Float    @default(0)
+  genres      String[]
+  shows       Show[]
+}
+
+model Theatre {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  location String
+  screens  Screen[]
+}
+
+model Screen {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  theatre   Theatre @relation(fields: [theatreId], references: [id])
+  theatreId String @db.ObjectId
+  shows     Show[]
+  rows      Int    @default(10)
+  cols      Int    @default(10)
+}
+
+model Show {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  movie     Movie    @relation(fields: [movieId], references: [id])
+  movieId   String   @db.ObjectId
+  screen    Screen   @relation(fields: [screenId], references: [id])
+  screenId  String   @db.ObjectId
+  startTime DateTime
+  price     Float
+  bookings  Booking[]
+}
+
+model Booking {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @db.ObjectId
+  show       Show     @relation(fields: [showId], references: [id])
+  showId     String   @db.ObjectId
+  seats      String[] // e.g. ["A1", "A2"]
+  status     String   @default("CONFIRMED") // CONFIRMED, CANCELLED
+  totalPrice Float
+  createdAt  DateTime @default(now())
+}
