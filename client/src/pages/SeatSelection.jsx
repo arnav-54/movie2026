@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import AuthContext from '../context/AuthContext';
+import { ArrowLeft, ArrowUp, Zap } from 'lucide-react';
 
 const SeatSelection = () => {
     const { showId } = useParams();
@@ -14,13 +15,11 @@ const SeatSelection = () => {
     const socketRef = useRef();
 
     useEffect(() => {
-        // Socket init
         socketRef.current = io('http://localhost:5000');
         socketRef.current.emit('join_show', showId);
 
         socketRef.current.on('seat_locked', (seats) => {
-            // Real-time update logic could be more complex here
-            console.log('Seats locked by others:', seats);
+            // In a real app we would merge this, simpler for now
         });
 
         return () => socketRef.current.disconnect();
@@ -50,6 +49,8 @@ const SeatSelection = () => {
             setSelectedSeats(newSeats);
             socketRef.current.emit('select_seat', { showId, seats: newSeats });
         } else {
+            // Max 10 seats
+            if (selectedSeats.length >= 10) return alert('Max 10 seats allowed');
             const newSeats = [...selectedSeats, seat];
             setSelectedSeats(newSeats);
             socketRef.current.emit('select_seat', { showId, seats: newSeats });
@@ -58,89 +59,130 @@ const SeatSelection = () => {
 
     const handleBooking = async () => {
         try {
-            // In a real app we would attach token to axios interceptors
-            const config = {
-                headers: { Authorization: `Bearer ${user.token}` }
-            };
-
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
             await axios.post('http://localhost:5000/api/bookings', {
-                showId,
-                seats: selectedSeats,
-                totalPrice: selectedSeats.length * show.price
+                showId, seats: selectedSeats, totalPrice: selectedSeats.length * show.price
             }, config);
-
-            alert('Booking Confirmed!');
-            navigate('/'); // Or to a success page
-        } catch (e) {
-            alert('Booking Failed: ' + (e.response?.data?.message || e.message));
-        }
+            navigate('/my-bookings');
+        } catch (e) { alert('Booking Failed'); }
     };
 
     if (!show) return <div className="container page-container">Loading...</div>;
 
-    // Generate grid
+    // Generate grid: Gold (Front), Platinum (Middle), Diamond (Back)
+    // We will simulate this by dividing rows. 
+    // Rows A-D: Gold ($price), E-H: Platinum (+$5), I-J: Diamond (+$10)
+    // For simplicity, we stick to one price for now but visually separate them.
+
     const rows = show.screen.rows || 10;
     const cols = show.screen.cols || 10;
-    const grid = [];
+
+    // Group rows
+    const goldRows = [];
+    const platinumRows = [];
+
     for (let r = 0; r < rows; r++) {
         const rowSeats = [];
         for (let c = 0; c < cols; c++) {
-            const seatId = `${String.fromCharCode(65 + r)}${c + 1}`;
-            rowSeats.push(seatId);
+            rowSeats.push(`${String.fromCharCode(65 + r)}${c + 1}`);
         }
-        grid.push(rowSeats);
+        if (r < 4) goldRows.push({ name: String.fromCharCode(65 + r), seats: rowSeats });
+        else platinumRows.push({ name: String.fromCharCode(65 + r), seats: rowSeats });
     }
 
     return (
-        <div className="container page-container" style={{ textAlign: 'center' }}>
-            <h2>Select Seats for {show.movie.title}</h2>
-            <p>{show.screen.name} - {new Date(show.startTime).toLocaleString()}</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '30px', overflowX: 'auto' }}>
-                <div style={{ width: '600px', height: '30px', background: 'linear-gradient(to bottom, #fff, transparent)', opacity: 0.1, marginBottom: '20px', borderRadius: '50% 50% 0 0' }}></div>
-                <div style={{ marginBottom: '20px', color: '#888', letterSpacing: '5px' }}>SCREEN</div>
-
-                {grid.map((row, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '8px' }}>
-                        {row.map(seat => {
-                            const isBooked = bookedSeats.includes(seat);
-                            const isSelected = selectedSeats.includes(seat);
-                            return (
-                                <div
-                                    key={seat}
-                                    onClick={() => handleSeatClick(seat)}
-                                    title={seat}
-                                    style={{
-                                        width: '32px', height: '32px',
-                                        background: isBooked ? '#444' : isSelected ? 'var(--primary)' : '#fff',
-                                        color: isBooked ? '#666' : isSelected ? 'white' : '#222',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        cursor: isBooked ? 'not-allowed' : 'pointer',
-                                        borderRadius: '6px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 'bold',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {/* {seat} - maybe too small text, hide if zoomed out */}
-                                </div>
-                            );
-                        })}
+        <div style={{ background: '#f2f2f2', minHeight: '100vh', paddingBottom: '100px' }}>
+            {/* Header */}
+            <div style={{ background: '#1f2533', padding: '15px 20px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <ArrowLeft size={24} onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
+                    <div>
+                        <div style={{ fontSize: '1rem', fontWeight: '500' }}>{show.movie.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#ccc' }}>{show.screen.theatre.name} | {new Date(show.startTime).toLocaleString()}</div>
                     </div>
-                ))}
-
-                <div style={{ marginTop: '20px', display: 'flex', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '20px', height: '20px', background: '#fff', borderRadius: '4px' }}></div> Available</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '20px', height: '20px', background: 'var(--primary)', borderRadius: '4px' }}></div> Selected</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '20px', height: '20px', background: '#444', borderRadius: '4px' }}></div> Booked</div>
+                </div>
+                <div style={{ border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                    {selectedSeats.length} Tickets
                 </div>
             </div>
 
-            <div style={{ marginTop: '30px', padding: '20px', background: '#222', borderRadius: '8px', display: 'inline-block', minWidth: '300px' }}>
-                <p style={{ fontSize: '1.2rem', marginBottom: '10px' }}>Selected: {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}</p>
-                <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)', marginBottom: '20px' }}>Total: ${selectedSeats.length * show.price}</p>
-                <button className="btn btn-primary" onClick={handleBooking} disabled={selectedSeats.length === 0} style={{ padding: '10px 40px', fontSize: '1.1rem' }}>Confirm Booking</button>
+            {/* Booking Area */}
+            <div className="container" style={{ paddingTop: '30px', maxWidth: '800px' }}>
+
+                {/* Legend */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '40px', fontSize: '0.85rem', color: '#666' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="seat"></div> Available</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="seat selected" style={{ background: '#1ea83c', borderColor: '#1ea83c' }}></div> Selected</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div className="seat booked" style={{ background: '#eee' }}></div> Sold</div>
+                </div>
+
+                {/* Seats */}
+                <div style={{ background: 'white', padding: '40px 20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+
+                    {platinumRows.length > 0 && (
+                        <div style={{ marginBottom: '30px' }}>
+                            <div style={{ color: '#888', fontSize: '0.8rem', marginBottom: '10px', paddingLeft: '20px' }}>PLATINUM - ${show.price + 5}</div>
+                            {platinumRows.map(row => (
+                                <div key={row.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                                    <div style={{ width: '20px', color: '#999', fontSize: '0.8rem' }}>{row.name}</div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        {row.seats.map(seat => (
+                                            <div key={seat}
+                                                className={`seat ${bookedSeats.includes(seat) ? 'booked' : ''} ${selectedSeats.includes(seat) ? 'selected' : ''}`}
+                                                onClick={() => handleSeatClick(seat)}
+                                            >
+                                                {seat.substring(1)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div style={{ borderTop: '1px dashed #ddd', margin: '20px 0' }}></div>
+
+                    <div style={{ marginBottom: '50px' }}>
+                        <div style={{ color: '#888', fontSize: '0.8rem', marginBottom: '10px', paddingLeft: '20px' }}>GOLD - ${show.price}</div>
+                        {goldRows.map(row => (
+                            <div key={row.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                                <div style={{ width: '20px', color: '#999', fontSize: '0.8rem' }}>{row.name}</div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    {row.seats.map(seat => (
+                                        <div key={seat}
+                                            className={`seat ${bookedSeats.includes(seat) ? 'booked' : ''} ${selectedSeats.includes(seat) ? 'selected' : ''}`}
+                                            onClick={() => handleSeatClick(seat)}
+                                        >
+                                            {seat.substring(1)}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="screen-visual"></div>
+                </div>
             </div>
+
+            {/* Bottom Bar */}
+            {selectedSeats.length > 0 && (
+                <div style={{
+                    position: 'fixed', bottom: 0, left: 0, width: '100%',
+                    background: 'white', boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+                    padding: '15px 40px', display: 'flex', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{ width: '100%', maxWidth: '800px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%', padding: '15px', fontSize: '1rem', background: '#f84464', borderRadius: '8px' }}
+                            onClick={handleBooking}
+                        >
+                            Pay ${selectedSeats.length * show.price}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
