@@ -1,101 +1,75 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Search, MapPin, Menu, User, LogOut, ChevronDown } from 'lucide-react';
+import { Search, User, LogOut, Ticket, Menu, Bell } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
-    const [location, setLocation] = useState('New York');
-    const [searchTerm, setSearchTerm] = useState('');
-    const navigate = useNavigate();
+    const [scrolled, setScrolled] = useState(false);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        // Implement search logic or navigate to search page
-        console.log('Searching for:', searchTerm);
-    };
+    // Navbar scroll effect
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 50) setScrolled(true);
+            else setScrolled(false);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
-        <nav className="navbar">
+        <nav className="navbar" style={{
+            background: scrolled ? 'rgba(15, 16, 20, 0.95)' : 'transparent',
+            borderBottom: scrolled ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            transition: 'all 0.4s ease'
+        }}>
             <div className="container nav-content">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '30px', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '50px' }}>
                     <Link to="/" className="logo">
-                        <span style={{ color: '#fff' }}>MOVIE</span><span style={{ background: 'var(--secondary)', color: 'white', padding: '0 5px', borderRadius: '4px' }}>TIX</span>
+                        <span>CINE</span><span style={{ color: 'white' }}>VERSE</span>
                     </Link>
 
-                    <div style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
+                    <div className="nav-links hidden-mobile" style={{ display: 'flex', gap: '30px' }}>
+                        <Link to="/" className="active">Movies</Link>
+                        <Link to="/theatres">Theatres</Link>
+                        <Link to="/events">Events</Link>
+                        <Link to="/sports">Sports</Link>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '12px', color: '#888' }} />
                         <input
                             type="text"
-                            placeholder="Search for Movies, Events, Plays, Sports and Activities"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search movies..."
                             style={{
-                                width: '100%',
                                 padding: '10px 10px 10px 40px',
-                                borderRadius: '4px',
-                                border: '1px solid #444',
-                                background: '#fff',
-                                color: '#333',
-                                fontSize: '0.9rem'
+                                background: 'rgba(255,255,255,0.08) !important',
+                                border: '1px solid transparent !important',
+                                borderRadius: '30px !important',
+                                width: '240px',
+                                fontSize: '0.9rem',
+                                color: 'white'
                             }}
                         />
                     </div>
-                </div>
-
-                <div className="nav-links">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', marginRight: '15px', color: '#ccc' }}>
-                        <span style={{ fontSize: '0.9rem' }}>{location}</span>
-                        <ChevronDown size={14} />
-                    </div>
 
                     {user ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <Link to="/my-bookings" style={{ fontSize: '0.9rem' }}>Bookings</Link>
-                            {/* <Link to="/admin" style={{fontSize: '0.9rem'}}>Admin</Link> */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'black', fontWeight: 'bold' }}>
-                                    {user.name[0].toUpperCase()}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <Link to="/my-bookings" style={{ position: 'relative' }}>
+                                <Ticket size={22} color="#ccc" />
+                            </Link>
+                            <div className="user-dropdown" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                <div style={{ width: '35px', height: '35px', borderRadius: '50%', background: 'linear-gradient(45deg, #e50914, #ff5e62)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1rem' }}>
+                                    {user.name[0]}
                                 </div>
-                                <button onClick={logout} className="btn-icon" title="Logout"><LogOut size={18} /></button>
+                                <LogOut size={20} color="#ccc" onClick={logout} style={{ cursor: 'pointer', transition: '0.2s', ':hover': { color: 'white' } }} />
                             </div>
                         </div>
                     ) : (
-                        <Link to="/login" className="btn btn-secondary" style={{ padding: '5px 15px', fontSize: '0.8rem' }}>Sign In</Link>
+                        <Link to="/login" className="btn btn-primary" style={{ padding: '8px 24px', borderRadius: '4px' }}>Sign In</Link>
                     )}
-
-                    <div className="menu-icon" style={{ marginLeft: '10px', cursor: 'pointer' }}>
-                        <Menu size={24} color="white" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Sub-header for categories similar to BMS */}
-            <div style={{
-                background: '#222',
-                height: '40px',
-                width: '100%',
-                position: 'absolute',
-                top: '64px',
-                borderBottom: '1px solid #333',
-                display: 'flex',
-                alignItems: 'center'
-            }}>
-                <div className="container" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc' }}>
-                    <div style={{ display: 'flex', gap: '20px' }}>
-                        <Link to="/">Movies</Link>
-                        <span>Stream</span>
-                        <span>Events</span>
-                        <span>Plays</span>
-                        <span>Sports</span>
-                        <span>Activities</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '20px', fontSize: '0.8rem' }}>
-                        <span>ListYourShow</span>
-                        <span>Corporates</span>
-                        <span>Offers</span>
-                        <span>Gift Cards</span>
-                    </div>
                 </div>
             </div>
         </nav>
