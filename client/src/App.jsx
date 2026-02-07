@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import MovieDetails from './pages/MovieDetails';
+import SeatSelection from './pages/SeatSelection';
 
 function App() {
   return (
