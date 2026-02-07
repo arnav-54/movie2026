@@ -4,6 +4,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import AuthContext from '../context/AuthContext';
 import { ArrowLeft, ArrowUp, Zap } from 'lucide-react';
+import PaymentModal from '../components/PaymentModal';
 
 const SeatSelection = () => {
     const { showId } = useParams();
@@ -13,6 +14,8 @@ const SeatSelection = () => {
     const [selectedSeats, setSelectedSeats] = useState([]);
     const [bookedSeats, setBookedSeats] = useState([]);
     const socketRef = useRef();
+
+    const [showPayment, setShowPayment] = useState(false);
 
     useEffect(() => {
         socketRef.current = io('http://localhost:5000');
@@ -57,20 +60,23 @@ const SeatSelection = () => {
         }
     };
 
-    const handleBooking = async () => {
+    const confirmBooking = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
             await axios.post('http://localhost:5000/api/bookings', {
                 showId, seats: selectedSeats, totalPrice: selectedSeats.length * show.price
             }, config);
             navigate('/my-bookings');
-        } catch (e) { alert('Booking Failed'); }
+        } catch (e) {
+            alert('Booking Failed: ' + (e.response?.data?.message || 'Unknown error'));
+            setShowPayment(false);
+        }
     };
 
     if (!show) return <div className="container page-container">Loading...</div>;
 
     // Generate grid: Gold (Front), Platinum (Middle), Diamond (Back)
-    // We will simulate this by dividing rows. 
+    // We will simulate this by dividing rows.
     // Rows A-D: Gold ($price), E-H: Platinum (+$5), I-J: Diamond (+$10)
     // For simplicity, we stick to one price for now but visually separate them.
 
@@ -176,13 +182,20 @@ const SeatSelection = () => {
                         <button
                             className="btn btn-primary"
                             style={{ width: '100%', padding: '15px', fontSize: '1rem', background: '#f84464', borderRadius: '8px' }}
-                            onClick={handleBooking}
+                            onClick={() => setShowPayment(true)}
                         >
                             Pay ${selectedSeats.length * show.price}
                         </button>
                     </div>
                 </div>
             )}
+
+            <PaymentModal
+                isOpen={showPayment}
+                onClose={() => setShowPayment(false)}
+                totalAmount={selectedSeats.length * show.price}
+                onConfirm={confirmBooking}
+            />
         </div>
     );
 };
