@@ -17,6 +17,7 @@ const Navbar = () => {
                         <>
                             <span className="user-info"><User size={18} /> {user.name}</span>
                             <Link to="/my-bookings">My Bookings</Link>
+                            <Link to="/admin">Admin</Link>
                             <button onClick={logout} className="btn-icon"><LogOut size={18} /></button>
                         </>
                     ) : (

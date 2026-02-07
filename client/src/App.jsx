@@ -7,6 +7,8 @@ import Register from './pages/Register';
 import MovieDetails from './pages/MovieDetails';
 import SeatSelection from './pages/SeatSelection';
 
+import AdminDashboard from './pages/AdminDashboard';
+
 function App() {
   return (
     <Router>
@@ -18,6 +20,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/movie/:id" element={<MovieDetails />} />
           <Route path="/booking/:showId" element={<SeatSelection />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </AuthProvider>
     </Router>
